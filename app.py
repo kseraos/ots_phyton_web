@@ -22,16 +22,19 @@ def teardown_request(f):
 
 @app.route('/')
 def exibir_entradas():
-    # entradas = posts[::-1] #Mock das postagens
+    # entradas = posts[::-1] # Mock das postagens
 
-    sql = "SELECT titulo, texto, data_criacao FROM posts ORDER BY id DESC"
+
+    sql  = "SELECT titulo, texto, data_criacao FROM posts ORDER BY id DESC"
     resultado = g.bd.execute(sql)
+    entrada = []
 
-    entrada = [
-        {"titulo": "Primeiro Titulo", "texto": "Primeiro",  "data_criacao": "11/09/2023"},
-        {"titulo": "Segundo Titulo", "texto": "Segundo",  "data_criacao": "12/09/2023"}
-    ]
-
+    for titulo, texto, data_criacao in resultado.fetchall():
+        entrada.append({
+        "titulo":titulo,
+        "texto":texto,
+        "data_criacao":data_criacao
+        })
 
     return render_template('exibir_entradas.html', entradas=entrada)
 
@@ -52,23 +55,26 @@ def logout():
     flash('Logout efetuado com sucesso!')
     return redirect(url_for('exibir_entradas'))
 
-@app.route('/inserir', methods=['POST'])
+@app.route('/inserir', methods=["POST"])
 def inserir_entradas():
-    if session['logado']:
-        novo_post = {
-           "titulo" :  request.form['titulo'],
-            "texto" : request.form['texto']
-            }
-        posts.append(novo_post)
-        flash("Post criado com sucesso")
-        return redirect(url_for('exibir_entradas'))
+    if not session['logado']:
+        abort(401)
+        
+    titulo = request.form.get('titulo')  
+    texto = request.form.get('texto')  
+    sql = "INSERT INTO posts (titulo, texto) values(?,?) "
+    g.bd.execute(sql,[titulo, texto])
+    g.bd.commit()
+    flash("Post criado com sucesso!")
+    return redirect(url_for('exibir_entradas'))
 
-@app.route('/posts/<int:id>')
-def exibir_entrada(id):
-    try:
-        entradas = posts[id-1]
-        return render_template('exibir_entrada.html', entradas=entradas)
-    except Exception:
-        return abort(404)
+
+# @app.route('/posts/<int:id>')
+# def exibir_entrada(id):
+#     try:
+#         entradas = posts[id-1]
+#         return render_template('exibir_entrada.html', entradas=entradas)
+#     except Exception:
+#         return abort(404)
 
     
